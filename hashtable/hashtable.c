@@ -15,11 +15,11 @@
  *      if max_size <= 0
  */
 hashtable_t *create_hashtable(int max_size){
-    hashtable_t *newtable = malloc(sizeof(hashtable_t));
-    newtable->table_len = max_size;
-    newtable->table = malloc(max_size*sizeof(hashtable_t*));
-//    memset(&newtable->table, 0, max_size*sizeof(hashtable_t*));
-    return newtable;
+	hashtable_t *newtable = malloc(sizeof(hashtable_t));
+	newtable->table_len = max_size;
+	newtable->table = malloc(max_size*sizeof(hashtable_ent_t*));
+	//memset(&newtable->table, 0, max_size*sizeof(hashtable_t*));
+	return newtable;
 }
 
 /**
@@ -33,19 +33,21 @@ hashtable_t *create_hashtable(int max_size){
  *      the chains of nodes and the keys in each node as well
  */
 void free_hashtable(hashtable_t *table){
-    hashtable_ent_t *walk = *table->table;
-    hashtable_ent_t *next = NULL;
-    while(*table->table){
-        while(walk)
-        {
-            next = walk->next;
-            free(walk);
-            walk = next;
-        }
-        table->table++;
-    }
-    free(walk);
-    free(next);
+	hashtable_ent_t **array = table->table;
+	hashtable_ent_t *walk = NULL;
+	hashtable_ent_t *next = NULL;
+	while(array){
+		walk=*array;
+		while(walk)
+		{
+			next = walk->next;
+			free(walk);
+			walk = next;
+		}
+		array++;
+	}
+	free(table->table);
+	free(table);
 }
 
 /**
@@ -63,25 +65,26 @@ void free_hashtable(hashtable_t *table){
  *      0 for success, or -1 if any of the parameters are NULL or the key isn't in the table
  */
 int get(hashtable_t *table, const char *key, double *value){
-    
-    int index = hash(key)%table->table_len;
-    hashtable_ent_t *p=*table->table;
-    if (index>0) {
-        for (int i = 0; i < index; i++) {
-            /* code */
-            p=*++table->table;
-        }
-    }
-
-    while(p){
-        if (strcmp(p->key, key) == 0) {
-            /* code */
-            value=&(p->value);
-            return 0;
-        }
-        p=p->next;
-    }
-    return -1;
+	int index = hash(key)%(table->table_len);
+	hashtable_ent_t **p=table->table;
+	hashtable_ent_t *walk=NULL;
+	if (index>0) {
+		int i = 0;
+		for (i = 0; i < index; i++) {
+			/* code */
+			p++;
+		}
+	}
+	walk=*p;
+	while(walk){
+		if (strcmp(walk->key, (char *)key) == 0) {
+			/* code */
+			value=&(walk->value);
+			return 0;
+		}
+		walk=walk->next;
+	}
+	return -1;
 }
 
 /**
@@ -97,49 +100,63 @@ int get(hashtable_t *table, const char *key, double *value){
  * Returns:
  *      -1 if the parameters were invalid, or if the set operation failed
  *      such as if an insertion failed because of a malloc() failure.
- 
+
  0 if the operation succeeds.
  * Remarks:
  *      If the key doesn't already exist in the table, add it
  */
 int set(hashtable_t *table, const char *key, double value){
-    if (table==NULL||key==NULL) {
-        /* code */
-        return -1;
-    }
-    int flag = 0;
-    int index = hash(key)%table->table_len;
-    hashtable_ent_t *p=*table->table;
-    if (index>0) {
-        for (int i = 0; i < index; i++) {
-            /* code */
-            p=*++table->table;
-        }
-    }
-    while(p){
-        if (strcmp(p->key, key) == 0) {
-            /* code */
-            p->value=value;
-            flag = 1;
-            return 0;
-        }
-        p=p->next;
-    }
-    if (flag==0) {
-        /* code */
-        hashtable_ent_t  *new = malloc(sizeof(hashtable_ent_t));
-        if (new==NULL) {
-            /* code */
-            return -1;
-        }
-        else{
-            new->key=(char *)key;
-            new->value=value;
-            p->next = new;
-            return 0;
-        }
-    }
-    return -1;
+	if (table==NULL||key==NULL) {
+		/* code */
+		return -1;
+	}
+	int flag = 0;
+	int index = hash(key)%(table->table_len);
+	hashtable_ent_t **array=table->table;
+	hashtable_ent_t *p=NULL;	
+	hashtable_ent_t *last=NULL;	
+	if (index>0) {
+		int i = 0;
+		for (    i = 0; i < index; i++) {
+			/* code */
+			array++;
+		}
+	}
+	p=*array;
+	while(p){
+		if (strcmp(p->key, key) == 0) {
+			/* code */
+			p->value=value;
+			flag = 1;
+			return 0;
+		}
+		last=p;
+		p=p->next;
+	}
+
+	if (flag==0) {
+		/* code */
+		hashtable_ent_t  *new = malloc(sizeof(hashtable_ent_t));
+		if (new==NULL) {
+			/* code */
+			return -1;
+		}
+		else{
+			new->key=(char *)key;
+			new->value=value;
+			//p->next = new;
+	if(last==NULL){
+	//init
+	*array=new;
+}
+else{
+//add
+p->next=new;
+}
+			return 0;
+		}
+	}
+	return -1;
 }
 
 /**
@@ -155,26 +172,27 @@ int set(hashtable_t *table, const char *key, double value){
  *      pointers since the pointers are not the key
  */
 int key_exists(hashtable_t *table, const char *key){
-    if (table==NULL||key==NULL) {
-        /* code */
-        return -1;
-    }
-    int index = hash(key)%table->table_len;
-    hashtable_ent_t *p=*table->table;
-    if (index>0) {
-        for (int i = 0; i < index; i++) {
-            /* code */
-            p=*++table->table;
-        }
-    }
-    while(p){
-        if (strcmp(p->key, key) == 0) {
-            /* code */
-            return 1;
-        }
-        p=p->next;
-    }
-    return 0;
+	if (table==NULL||key==NULL) {
+		/* code */
+		return -1;
+	}
+	int index = hash(key)%table->table_len;
+	hashtable_ent_t *p=*table->table;
+	if (index>0) {
+		int i = 0;
+		for (i = 0; i < index; i++) {
+			/* code */
+			p=*++table->table;
+		}
+	}
+	while(p){
+		if (strcmp(p->key, key) == 0) {
+			/* code */
+			return 1;
+		}
+		p=p->next;
+	}
+	return 0;
 }
 
 /**
@@ -190,46 +208,47 @@ int key_exists(hashtable_t *table, const char *key){
  *      the node back to an initial state so later we can reuse the node
  */
 int remove_key(hashtable_t *table, const char *key){
-    if (table==NULL||key==NULL) {
-        /* code */
-        return -1;
-    }
-    int index = hash(key)%table->table_len;
-    hashtable_ent_t *p=*table->table;
-    if (index>0) {
-        for (int i = 0; i < index; i++) {
-            /* code */
-            p=*++table->table;
-        }
-    }
-    if (strcmp(p->key, key) == 0) {
-        /* code */
-        hashtable_ent_t *next = *table->table;
-        if(next->next!=NULL){
-            *table->table=next->next;}
-        else{
-            *table->table=NULL;}
-        free(next);
-        return 0;
-    }
-    else{
-        while(p){
-            if (strcmp(p->next->key, key) == 0) {
-                /* code */
-                
-                if(p->next->next!=NULL){
-                    p->next=p->next->next;
-                    free(p->next);
-                }
-                else{
-                    free(p->next);
-                    p->next=NULL;
-                }
-                return 0;
-            }
-            p=p->next;
-        }
-    }
-    return -1;
-    
+	if (table==NULL||key==NULL) {
+		/* code */
+		return -1;
+	}
+	int index = hash(key)%table->table_len;
+	hashtable_ent_t *p=*table->table;
+	if (index>0) {
+		int i =0;
+		for (i = 0; i < index; i++) {
+			/* code */
+			p=*++table->table;
+		}
+	}
+	if (strcmp(p->key, key) == 0) {
+		/* code */
+		hashtable_ent_t *next = *table->table;
+		if(next->next!=NULL){
+			*table->table=next->next;}
+		else{
+			*table->table=NULL;}
+		free(next);
+		return 0;
+	}
+	else{
+		while(p){
+			if (strcmp(p->next->key, key) == 0) {
+				/* code */
+
+				if(p->next->next!=NULL){
+					p->next=p->next->next;
+					free(p->next);
+				}
+				else{
+					free(p->next);
+					p->next=NULL;
+				}
+				return 0;
+			}
+			p=p->next;
+		}
+	}
+	return -1;
+
 }

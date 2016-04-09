@@ -34,6 +34,7 @@ void free_linkedlist(linkedlist_t *list){
     free(walk);
     walk = next;
   }
+  free(list);
 }
 
 /**
@@ -55,14 +56,16 @@ int add_node(linkedlist_t *list, node_t *node){
       /* code */
       list->head=node;
       list->tail=node;
+return 0;
     }
     if (list->tail!=NULL) {
       /* code */
       node->prev=list->tail;
       list->tail->next=node;
       list->tail=node;
+return 0;
     }
-    return 0;
+    return -1;
   }
 }
 
@@ -70,32 +73,32 @@ int add_node(linkedlist_t *list, node_t *node){
  * Given a pointer to a linkedlist node and the linkedlist, remove
  * the node from the list. This does not deallocate the node or it's
  * contents.
- * Parameters:
+ *i Parameters:
  *      list - Pointer to the linkedlist we are removing the node from
  *      node - Pointer to the node we are removing from the list
  * Return:
  *      0 if the removal is successful, or -1 if the removal failed or either parameter is NULL
  */
 int remove_node(linkedlist_t *list, node_t *node){
-    if (list==NULL||node==NULL||list->head==NULL) {
-        /* code */
-        return -1;
-    }
-    else{
-        node_t *walk = list->head;
-        node_t *next = NULL;
-        while(walk)
-        {
-            next = walk->next;
-            if (next==node) {
+	if (list==NULL||node==NULL||list->head==NULL) {
+		/* code */
+		return -1;
+	}
+	else if(list->head==node){
+		list->head=node->next;
+		return 0;
+	}
+	else if(list->tail==node){
+		list->tail=node->prev;
+		return 0;
+	}
+	else{
 
-            }
-            walk = next;
-            return 0;
-        }
-
-    }
-    return -1;
+		node->prev->next=node->next;
+		node->next->prev=node->prev;
+		return 0;
+	}
+	return -1;
 }
 
 /**
@@ -116,14 +119,15 @@ int remove_node(linkedlist_t *list, node_t *node){
  *      is modified, so a copy of the underlying memory must be performed.
  *      Both company1 and company2 are allowed to be NULL.
  */
-node_t * create_node(long int timestamp, short transaction_type, const char *company1, const char *company2, double value){
-  node_t *newnode = malloc(sizeof(node_t));
-  newnode->timestamp=timestamp;
-  newnode->transaction_type=transaction_type;
-  newnode->company1=(char *)company1;
-  newnode->company2=(char *)company2;
-  newnode->value=value;
-  return newnode;
+node_t *create_node(long int timestamp, short transaction_type, const char *company1, const char *company2, double value){
+	node_t *newnode = malloc(sizeof(node_t));
+	if(newnode == NULL) return NULL;
+	newnode->timestamp=timestamp;
+	newnode->transaction_type=transaction_type;
+	newnode->company1=(char *)company1;
+	newnode->company2=(char *)company2;
+	newnode->value=value;
+	return newnode;
 }
 
 /**
@@ -133,7 +137,10 @@ node_t * create_node(long int timestamp, short transaction_type, const char *com
  * Remarks:
  */
 void delete_node(node_t *node){
-  free(node);
+	//node->prev->next=node->next;
+	//node->next->prev=node->prev;
+
+	free(node);
 }
 
 /**
@@ -148,20 +155,19 @@ void delete_node(node_t *node){
  */
 node_t* find_node(linkedlist_t *list, long int timestamp){
 
-  if (list==NULL||list->head==NULL) {
-      /* code */
-      return NULL;
-  }
-  else{
-    node_t *walk = list->head;
-    while(walk){
-      if (walk->timestamp==timestamp) {
-        /* code */
-        return walk;
-      }
-      walk=walk->next;
-    }
-    free(walk);
-  }
-    return NULL;
+	if (list==NULL||list->head==NULL) {
+		/* code */
+		return NULL;
+	}
+	else{
+		node_t *walk = list->head;
+		while(walk){
+			if (walk->timestamp==timestamp) {
+				/* code */
+				return walk;
+			}
+			walk=walk->next;
+		}
+	}
+	return NULL;
 }
