@@ -42,6 +42,7 @@ void free_hashtable(hashtable_t *table){
 		while(walk)
 		{
 			next = walk->next;
+			free(walk->key);
 			free(walk);
 			walk = next;
 		}
@@ -145,7 +146,8 @@ int set(hashtable_t *table, const char *key, double value){
 			return -1;
 		}
 		else{
-			new->key=(char *)key;
+			new->key=malloc(sizeof(char *));
+			*new->key=*key;
 			new->value=value;
 			//p->next = new;
 			if(!*(table->table+index)){
@@ -217,9 +219,9 @@ int remove_key(hashtable_t *table, const char *key){
 		/* code */
 		hashtable_ent_t *del = p;
 		if(del->next!=NULL){
-			p=p->next;}
+			*(table->table+index)=p->next;}
 		else{
-			p=NULL;}
+			*(table->table+index)=NULL;}
 		free(del);
 		return 0;
 	}

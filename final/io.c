@@ -8,7 +8,10 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include "io.h"
+#include "hashtable.h"
+#include "linkedlist.h"
 /**
  * Read the initial account information from a file
  * by creating a new hashtable with one entry per line
@@ -35,12 +38,11 @@
 hashtable_t *read_accounts(FILE *fd){
 	if(fd==NULL){
 		return NULL;}
-	hashtable_t *table=create_hashtable(5);
-	char name[256];
-	char score[256];
+	hashtable_t *table=create_hashtable(3);
+	char name[10];
 	int score2;
-	while (fscanf(fd,"%s %d\n",name,score)!=EOF){
-		score2=(int)score;
+	while (fscanf(fd,"%s",name)!=EOF){
+		fscanf(fd,"%d",&score2);
 		if (set(table, name, score2)!=0) {
 			return NULL;
 		}
@@ -68,14 +70,16 @@ hashtable_t *read_accounts(FILE *fd){
  *      are written to file does not matter
  */
 void write_accounts(FILE *fd, hashtable_t *accounts){
-
-	while (accounts->table) {
-		hashtable_ent_t *table = *accounts->table;
-		while (table) {
-			fprintf(fd, "%s %d\n",table->key,(int)table->value);
-			table=table->next;
+	hashtable_ent_t **p = accounts->table;
+	hashtable_ent_t *t = NULL;
+	int i = 0;
+	for (i=0;i<accounts->table_len;i++) {
+		t=*p;
+		while (t) {
+			fprintf(fd, "%s %d\n",t->key,(int)t->value);
+			t=t->next;
 		}
-		accounts->table++;
+		p++;
 	}
 
 }
@@ -100,31 +104,36 @@ linkedlist_t *read_transactions(FILE *fd){
 		return NULL;}
 	linkedlist_t *list=create_linkedlist();
 	linkedlist_t *temp=create_linkedlist();
-	long int timestamp=0;
+	long int timestamp=NULL;
 	short transaction_type=0;
-	char *arg1;
-	char *arg2;
-	char *arg3;
+	char arg1[10];
+	char arg2[20];
+	char arg3[20];
 	double arg4;
 	node_t *node=NULL;
 	node_t *small=NULL;
-	nodes=next;
-	while (fscanf(fd,"%l %s %s %s %l\n",timestamp,arg1,arg2,arg3,arg4)!=EOF){
+	while (fscanf(fd,"%li",&timestamp)!=EOF){
+		fscanf(fd,"%s",arg1);	
 		if (strcmp(arg1, "TRANSFER") == 0) {
 			transaction_type=2;
+		fscanf(fd,"%s",arg2);	
+		fscanf(fd,"%s",arg3);	
+		fscanf(fd,"%lf",&arg4);	
 		}
-		if (strcmp(arg1, "ADD")==0) {
+		else if (strcmp(arg1, "ADD")==0) {
 			transaction_type=1;
-			arg4=arg3;
+		fscanf(fd,"%s",arg2);	
+		fscanf(fd,"%lf",&arg4);	
 		}
-		if (strcmp(arg1, "REMOVE")==0) {
+		else if (strcmp(arg1, "REMOVE")==0) {
 			transaction_type=3;
+		fscanf(fd,"%s",arg2);	
 		}
 		else{
 			return NULL;
 		}
 		node=create_node(timestamp, transaction_type, arg2, arg3, arg4);
-		add_node(temp,node)
+		add_node(temp,node);
 	}
 	while(temp->head){
 		node = temp->head;
@@ -132,11 +141,11 @@ linkedlist_t *read_transactions(FILE *fd){
 		while(node){
 			if(node->timestamp<small->timestamp){
 				small=node;
-				add_node(list,node)
-					remove_node(temp,node);
 			}
 			node=node->next;	
 		}	
+				add_node(list,small);
+				remove_node(temp,small);
 	}
 	free_linkedlist(temp);
 	return list;
@@ -171,7 +180,7 @@ int apply_transactions(linkedlist_t *transactions, hashtable_t *accounts){
 
 	node_t *node=NULL;
 	node=transactions->head;
-	double * cm1;cm2;
+	double *cm1=malloc(sizeof(double*)),*cm2=malloc(sizeof(double *));
 	while(node){
 		switch(node->transaction_type){
 			case 1:
@@ -180,15 +189,16 @@ int apply_transactions(linkedlist_t *transactions, hashtable_t *accounts){
 			case 2:
 				get(accounts,node->company1,cm1);
 				get(accounts,node->company2,cm2);
-				cm1=cm1-node->value;
-				cmw=cm2+node->value;
-				set(accounts,node->company1,cm1);
-				set(accounts,node->company2,cm2);
+				set(accounts,node->company1,*cm1-node->value);
+				set(accounts,node->company2,*cm2+node->value);
 				break;
 			case 3:
 				remove_key(accounts,node->company1);
 				break;
 		}
+node=node->next;
 	}
+	free(cm1);
+	free(cm2);
 
 }

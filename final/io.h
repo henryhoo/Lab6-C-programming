@@ -1,14 +1,26 @@
-//
-//  io.c
-//  LAB6
-//
-//  Created by henry hoo on 4/7/16.
-//  Copyright © 2016 henry hoo. All rights reserved.
-//
+#ifndef IO_H
+#define IO_H
 
 #include <stdio.h>
-#include <string.h>
-#include "io.h"
+
+#include "hashtable.h"
+#include "linkedlist.h"
+
+/**
+ * Constants for different transaction types
+ */
+#define ADD 1
+#define REMOVE 2
+#define TRANSFER 4
+
+/**
+ * Various IO functions to:
+ *  Read the intial account states
+ *  Read the transaction list
+ *  Apply the transaction list to the account hashtable
+ *  Write the final account states back to the file
+ */
+
 /**
  * Read the initial account information from a file
  * by creating a new hashtable with one entry per line
@@ -32,21 +44,7 @@
  *      if fd is NULL or if the account file is incorrectly
  *      formatted.
  */
-hashtable_t *read_accounts(FILE *fd){
-	if(fd==NULL){
-		return NULL;}
-	hashtable_t *table=create_hashtable(5);
-	char name[256];
-	char score[256];
-	int score2;
-	while (fscanf(fd,"%s %d\n",name,score)!=EOF){
-		score2=(int)score;
-		if (set(table, name, score2)!=0) {
-			return NULL;
-		}
-	}
-	return table;
-}
+hashtable_t *read_accounts(FILE *fd);
 
 /**
  * Write the final account information to a file by iterating
@@ -67,18 +65,7 @@ hashtable_t *read_accounts(FILE *fd){
  *      The ordering in which the <CompanyName> <AccountBalance> lines
  *      are written to file does not matter
  */
-void write_accounts(FILE *fd, hashtable_t *accounts){
-
-	while (accounts->table) {
-		hashtable_ent_t *table = *accounts->table;
-		while (table) {
-			fprintf(fd, "%s %d\n",table->key,(int)table->value);
-			table=table->next;
-		}
-		accounts->table++;
-	}
-
-}
+void write_accounts(FILE *fd, hashtable_t *accounts);
 
 /**
  * Read a list of transactions from a file
@@ -95,52 +82,8 @@ void write_accounts(FILE *fd, hashtable_t *accounts){
  *      they were in the file or NULL if fd is invalid or the file contains a transaction
  *      that was invalid (Unknown transaction type, timestamps out of order, etc)
  */
-linkedlist_t *read_transactions(FILE *fd){
-	if(fd==NULL){
-		return NULL;}
-	linkedlist_t *list=create_linkedlist();
-	linkedlist_t *temp=create_linkedlist();
-	long int timestamp=0;
-	short transaction_type=0;
-	char *arg1;
-	char *arg2;
-	char *arg3;
-	double arg4;
-	node_t *node=NULL;
-	node_t *small=NULL;
-	nodes=next;
-	while (fscanf(fd,"%l %s %s %s %l\n",timestamp,arg1,arg2,arg3,arg4)!=EOF){
-		if (strcmp(arg1, "TRANSFER") == 0) {
-			transaction_type=2;
-		}
-		if (strcmp(arg1, "ADD")==0) {
-			transaction_type=1;
-			arg4=arg3;
-		}
-		if (strcmp(arg1, "REMOVE")==0) {
-			transaction_type=3;
-		}
-		else{
-			return NULL;
-		}
-		node=create_node(timestamp, transaction_type, arg2, arg3, arg4);
-		add_node(temp,node)
-	}
-	while(temp->head){
-		node = temp->head;
-		small = temp->head;
-		while(node){
-			if(node->timestamp<small->timestamp){
-				small=node;
-				add_node(list,node)
-					remove_node(temp,node);
-			}
-			node=node->next;	
-		}	
-	}
-	free_linkedlist(temp);
-	return list;
-}
+linkedlist_t *read_transactions(FILE *fd);
+
 /**
  * Iterate from the head to the tail of the transaction linked list
  * and apply the transactions in order to the accounts hashtable.
@@ -167,28 +110,6 @@ linkedlist_t *read_transactions(FILE *fd){
  *      -1 if any of the parameters are NULL or an illegal transaction
  *      occurs, otherwise return the number of processed transactions
  */
-int apply_transactions(linkedlist_t *transactions, hashtable_t *accounts){
+int apply_transactions(linkedlist_t *transactions, hashtable_t *accounts);
 
-	node_t *node=NULL;
-	node=transactions->head;
-	double * cm1;cm2;
-	while(node){
-		switch(node->transaction_type){
-			case 1:
-				set(accounts,node->company1,node->value);
-				break;
-			case 2:
-				get(accounts,node->company1,cm1);
-				get(accounts,node->company2,cm2);
-				cm1=cm1-node->value;
-				cmw=cm2+node->value;
-				set(accounts,node->company1,cm1);
-				set(accounts,node->company2,cm2);
-				break;
-			case 3:
-				remove_key(accounts,node->company1);
-				break;
-		}
-	}
-
-}
+#endif

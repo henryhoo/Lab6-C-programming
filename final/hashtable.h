@@ -1,8 +1,35 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#ifndef HASHTABLE_H
+#define HASHTABLE_H
+/* Header guard to prevent double inclusion */
 
-#include "hashtable.h"
+/**
+ * WARNING: DO NOT MODIFY THE HEADER!!!
+ * WARNING: DO NOT MODIFY THE HEADER!!!
+ */
+
+/**
+ * Represents an entry within the hashtable.
+ * A NULL value in key indicates this entry in the table is free for use.
+ * A non-NULL value points to the string key.
+ */
+typedef struct hashtable_ent {
+    char *key; /* Pointer to string key */
+    double value; /* Value associated with the key */
+    struct hashtable_ent* next; /* Pointer to next node in the chain */
+} hashtable_ent_t;
+
+typedef struct hashtable {
+    hashtable_ent_t **table; /* Pointer to hashtable array */
+    size_t table_len; /* Size of the hashtable array */
+} hashtable_t;
+
+/*
+ * This function is already compiled for you in hash.o
+ * Add hash.o to the list of files given to gcc to
+ * compile it into your program 
+ */
+extern int hash(const char *key);
+
 /**
  * Allocate and initialize an empty hashtable with a table array of size max_size
  * with each slot initialized to NULL.
@@ -14,13 +41,7 @@
  *      which the caller is responsible for later freeing, or NULL
  *      if max_size <= 0
  */
-hashtable_t *create_hashtable(int max_size){
-	hashtable_t *newtable = malloc(sizeof(hashtable_t));
-	newtable->table_len = max_size;
-	newtable->table = malloc(max_size*sizeof(hashtable_ent_t*));
-	memset(newtable->table, 0, max_size*sizeof(hashtable_ent_t*));
-	return newtable;
-}
+hashtable_t *create_hashtable(int max_size);
 
 /**
  * Free a previously allocated hashtable and all the contents of the entries
@@ -32,24 +53,7 @@ hashtable_t *create_hashtable(int max_size){
  *      When freeing the hashtable, you must free the array holding the table,
  *      the chains of nodes and the keys in each node as well
  */
-void free_hashtable(hashtable_t *table){
-	hashtable_ent_t **array = table->table;
-	hashtable_ent_t *walk = NULL;
-	hashtable_ent_t *next = NULL;
-	int i = 0;
-	while(i<table->table_len){
-		walk=*(array+i);
-		while(walk)
-		{
-			next = walk->next;
-			free(walk);
-			walk = next;
-		}
-		i++;
-	}
-	free(table->table);
-	free(table);
-}
+void free_hashtable(hashtable_t *table);
 
 /**
  * Get a value from the table based on the key specified. A key will be located at
@@ -65,35 +69,14 @@ void free_hashtable(hashtable_t *table){
  * Returns:
  *      0 for success, or -1 if any of the parameters are NULL or the key isn't in the table
  */
-int get(hashtable_t *table, const char *key, double *value){
-	int index = hash(key)%(table->table_len);
-	hashtable_ent_t **p=table->table;
-	hashtable_ent_t *walk=NULL;
-	if (index>0) {
-		int i = 0;
-		for (i = 0; i < index; i++) {
-			/* code */
-			p++;
-		}
-	}
-	walk=*p;
-	while(walk){
-		if (strcmp(walk->key, (char *)key) == 0) {
-			/* code */
-			*value=walk->value;
-			return 0;
-		}
-		walk=walk->next;
-	}
-	return -1;
-}
+int get(hashtable_t *table, const char *key, double *value);
 
 /**
  * Set the specified key to the given value, adding the key to the table
  * if the KEY doesn't already exist. You must store the value in the table
  * array as table[hash(key) % table_len]. If there is a collision with the
  * hash, add a new node to the linked list at the hash location.
- *
+ * 
  * Parameters:
  *      table - Pointer to the hashtable in which we are setting the value
  *      key - Pointer to the string that is the key
@@ -102,66 +85,11 @@ int get(hashtable_t *table, const char *key, double *value){
  *      -1 if the parameters were invalid, or if the set operation failed
  *      such as if an insertion failed because of a malloc() failure.
 
- 0 if the operation succeeds.
+ 		0 if the operation succeeds.
  * Remarks:
  *      If the key doesn't already exist in the table, add it
  */
-int set(hashtable_t *table, const char *key, double value){
-	if (table==NULL||key==NULL) {
-		/* code */
-		return -1;
-	}
-	int flag = 0;
-	int index = hash(key)%(table->table_len);
-	hashtable_ent_t **array=table->table;
-	hashtable_ent_t *p=NULL;	
-	hashtable_ent_t *last=NULL;	
-	if (index>0) {
-		int i = 0;
-		for (    i = 0; i < index; i++) {
-			/* code */
-			array++;
-		}
-	}
-	p=*array;
-	int a = 0;
-	while(p){
-		if (strcmp(p->key, key) == 0) {
-			/* code */
-			p->value=value;
-			flag = 1;
-			//printf("%s","in equal");
-			return 0;
-		}
-		last=p;
-		p=p->next;
-	}
-
-	if (flag==0) {
-		/* code */
-		hashtable_ent_t  *new = malloc(sizeof(hashtable_ent_t));
-		if (new==NULL) {
-			/* code */
-			return -1;
-		}
-		else{
-			new->key=(char *)key;
-			new->value=value;
-			//p->next = new;
-			if(!*(table->table+index)){
-				//init
-				*((table->table)+index)=new;
-			}
-			else{
-				//add
-
-					last->next=new;
-			}
-			return 0;
-		}
-	}
-	return -1;
-}
+int set(hashtable_t *table, const char *key, double value);
 
 /**
  * Check if a given string key is already in the table.
@@ -175,23 +103,7 @@ int set(hashtable_t *table, const char *key, double value){
  *      Remember to check that the strings themselves are equal, not the
  *      pointers since the pointers are not the key
  */
-int key_exists(hashtable_t *table, const char *key){
-	if (table==NULL||key==NULL) {
-		/* code */
-		return -1;
-	}
-	int index = hash(key)%table->table_len;
-	hashtable_ent_t *p=*table->table;
-	p=*(table->table+index);
-	while(p){
-		if (strcmp(p->key, key) == 0) {
-			/* code */
-			return 1;
-		}
-		p=p->next;
-	}
-	return 0;
-}
+int key_exists(hashtable_t *table, const char *key);
 
 /**
  * Remove a given key from the table if it exists
@@ -205,42 +117,6 @@ int key_exists(hashtable_t *table, const char *key){
  *      Remember to deallocate memory in the node and the node itself and reset
  *      the node back to an initial state so later we can reuse the node
  */
-int remove_key(hashtable_t *table, const char *key){
-	if (table==NULL||key==NULL) {
-		/* code */
-		return -1;
-	}
-	int index = hash(key)%table->table_len;
-	hashtable_ent_t *p=*table->table;
-	p=*(table->table+index);
-	if (strcmp(p->key, key) == 0) {
-		/* code */
-		hashtable_ent_t *del = p;
-		if(del->next!=NULL){
-			p=p->next;}
-		else{
-			p=NULL;}
-		free(del);
-		return 0;
-	}
-	else{
-		while(p->next){
-			if (strcmp(p->next->key, key) == 0) {
-				/* code */
+int remove_key(hashtable_t *table, const char *key);
 
-				if(p->next->next!=NULL){
-					p->next=p->next->next;
-					free(p->next);
-				}
-				else{
-					free(p->next);
-					p->next=NULL;
-				}
-				return 0;
-			}
-			p=p->next;
-		}
-	}
-	return -1;
-
-}
+#endif
